@@ -182,9 +182,17 @@ function updateProductsIfSeed(sqlDb) {
   });
 }
 
+let initError = null;
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function initDb() {
-  const SQL = await initSqlJs();
+  let initOptions = {};
+  const wasmPath = path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm');
+  if (fs.existsSync(wasmPath)) {
+    initOptions.wasmBinary = fs.readFileSync(wasmPath);
+  }
+
+  const SQL = await initSqlJs(initOptions);
 
   if (fs.existsSync(DB_PATH)) {
     const buf = fs.readFileSync(DB_PATH);
@@ -208,15 +216,17 @@ async function initDb() {
 }
 
 function getDb() {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     if (dbReady) return resolve(wrappedDb);
+    if (initError) return reject(initError);
     dbReadyCallbacks.push(resolve);
   });
 }
 
 initDb().catch(err => {
   console.error('DB init failed:', err);
-  process.exit(1);
+  initError = err;
 });
 
 module.exports = { getDb };
+
