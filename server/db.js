@@ -194,6 +194,18 @@ async function initDb() {
 
   const SQL = await initSqlJs(initOptions);
 
+  // On Vercel, copy bundled seeded DB to /tmp if not already present
+  if (process.env.VERCEL && !fs.existsSync('/tmp/quickbite.db')) {
+    const bundledDb = path.join(__dirname, '..', 'quickbite.db');
+    if (fs.existsSync(bundledDb)) {
+      try {
+        fs.copyFileSync(bundledDb, '/tmp/quickbite.db');
+      } catch (e) {
+        console.error('Failed to copy bundled DB to /tmp:', e.message);
+      }
+    }
+  }
+
   if (fs.existsSync(DB_PATH)) {
     const buf = fs.readFileSync(DB_PATH);
     _sqlDb = new SQL.Database(buf);

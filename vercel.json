@@ -5,7 +5,7 @@
       "src": "server/index.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["public/**", "server/**", "node_modules/sql.js/dist/**"]
+        "includeFiles": ["public/**", "server/**", "node_modules/sql.js/dist/**", "quickbite.db"]
       }
     }
   ],
