@@ -35,8 +35,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🍔 QuickBite server running at http://localhost:${PORT}`);
-  console.log(`   Admin: admin@quickbite.com / admin123`);
-  console.log(`   Student: student@quickbite.com / student123\n`);
-});
+// Only start listener locally — Vercel handles its own HTTP server
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🍔 QuickBite server running at http://localhost:${PORT}`);
+    console.log(`   Admin: admin@quickbite.com / admin123`);
+    console.log(`   Student: student@quickbite.com / student123\n`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;

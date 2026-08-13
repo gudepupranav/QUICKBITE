@@ -3,7 +3,11 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = path.join(__dirname, '..', 'quickbite.db');
+// Vercel's filesystem is read-only except /tmp; use /tmp on Vercel
+const DB_PATH = process.env.VERCEL
+  ? '/tmp/quickbite.db'
+  : path.join(__dirname, '..', 'quickbite.db');
+
 
 let _sqlDb;  // raw sql.js Database
 let wrappedDb;
