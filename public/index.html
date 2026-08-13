@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuickBite — Campus Food Ordering</title>
+  <meta name="description" content="Order food from your campus canteen. Browse the menu, add to cart, and track your order in real-time." />
+  <link rel="stylesheet" href="/css/style.css" />
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- ─── Auth Overlay ──────────────────────────────────────── -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <h1>🍔 QuickBite</h1>
+      <p>Campus Food Ordering System</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="Auth.showTab('login')">Login</button>
+      <button class="auth-tab" id="tab-register" onclick="Auth.showTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" class="auth-form" onsubmit="Auth.login(event)">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="login-email" placeholder="you@campus.edu" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="login-password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg" id="login-btn">
+        <span id="login-btn-text">Sign In</span>
+      </button>
+      <p style="text-align:center;font-size:0.78rem;color:var(--text-dim);">
+        Demo: student@quickbite.com / student123<br>
+        Admin: admin@quickbite.com / admin123
+      </p>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" class="auth-form" style="display:none" onsubmit="Auth.register(event)">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="reg-name" placeholder="Your Name" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="reg-email" placeholder="you@campus.edu" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="reg-password" placeholder="Min 6 characters" minlength="6" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg" id="register-btn">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ─── App Shell ─────────────────────────────────────────── -->
+<div id="app" style="display:none">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="brand-icon">🍔</span>
+      QuickBite
+    </div>
+    <div class="navbar-tabs" id="nav-tabs">
+      <button class="nav-tab active" id="nav-menu" onclick="Router.go('menu')">
+        <i class="fas fa-utensils"></i> Menu
+      </button>
+      <button class="nav-tab" id="nav-orders" onclick="Router.go('orders')">
+        <i class="fas fa-receipt"></i> My Orders
+      </button>
+      <button class="nav-tab admin-only hidden" id="nav-admin" onclick="Router.go('admin')">
+        <i class="fas fa-cog"></i> Admin
+      </button>
+    </div>
+    <div class="navbar-right">
+      <button class="cart-btn" id="cart-toggle-btn" onclick="CartUI.toggle()">
+        <i class="fas fa-shopping-cart"></i>
+        <span id="cart-count-nav">Cart</span>
+        <span class="cart-badge hidden" id="cart-badge">0</span>
+      </button>
+      <div class="user-chip" id="user-chip">
+        <i class="fas fa-user-circle"></i>
+        <span id="user-name-display"></span>
+        <span class="role-badge" id="user-role-badge"></span>
+      </div>
+      <button class="logout-btn" onclick="Auth.logout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Menu Page -->
+    <div class="page active" id="page-menu">
+      <div class="menu-hero">
+        <h2>What are you craving today? 🌶️</h2>
+        <p>Fresh food made just for you. Order ahead, skip the queue.</p>
+      </div>
+
+      <div class="filters-bar">
+        <div class="search-wrap">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" class="search-input" id="menu-search" placeholder="Search dishes, snacks..." oninput="Menu.onSearch(this.value)" />
+        </div>
+        <select class="form-input" id="sort-select" onchange="Menu.onSort(this.value)" style="width:auto;padding:11px 12px;">
+          <option value="">Sort by</option>
+          <option value="price_asc">Price: Low → High</option>
+          <option value="price_desc">Price: High → Low</option>
+        </select>
+      </div>
+
+      <div class="category-pills" id="category-pills">
+        <!-- Rendered by JS -->
+      </div>
+      <div style="margin-bottom:20px"></div>
+
+      <div class="food-grid" id="food-grid">
+        <div class="loading-center">
+          <div class="spinner"></div>
+          <span>Loading menu...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Page -->
+    <div class="page" id="page-orders">
+      <div class="section-header">
+        <h2 class="section-title">My <span>Orders</span></h2>
+        <button class="btn btn-ghost btn-sm" onclick="Orders.load()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </div>
+      <div id="orders-list" class="orders-list">
+        <div class="loading-center"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Admin Page -->
+    <div class="page" id="page-admin">
+      <div class="section-header">
+        <h2 class="section-title">Admin <span>Dashboard</span></h2>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" id="admin-tab-analytics" onclick="Admin.showTab('analytics')">
+          <i class="fas fa-chart-bar"></i> Analytics
+        </button>
+        <button class="admin-tab" id="admin-tab-products" onclick="Admin.showTab('products')">
+          <i class="fas fa-box"></i> Products
+        </button>
+        <button class="admin-tab" id="admin-tab-orders" onclick="Admin.showTab('orders')">
+          <i class="fas fa-list-alt"></i> Orders
+        </button>
+      </div>
+
+      <!-- Analytics Sub-panel -->
+      <div id="admin-panel-analytics">
+        <div class="stats-grid" id="stats-grid">
+          <div class="loading-center"><div class="spinner"></div></div>
+        </div>
+        <div class="card" style="padding:24px;margin-top:8px">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:20px">🏆 Top Selling Items</h3>
+          <div class="top-items" id="top-items-list"></div>
+        </div>
+      </div>
+
+      <!-- Products Sub-panel -->
+      <div id="admin-panel-products" style="display:none">
+        <div class="section-header" style="margin-bottom:16px">
+          <span></span>
+          <button class="btn btn-primary" onclick="Admin.openProductModal()">
+            <i class="fas fa-plus"></i> Add Product
+          </button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="products-admin-table">
+            <thead>
+              <tr>
+                <th>Image</th><th>Name</th><th>Category</th>
+                <th>Price</th><th>Stock</th><th>Condition</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-admin-tbody">
+              <tr><td colspan="7" class="loading-center"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Orders Sub-panel -->
+      <div id="admin-panel-orders" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <select class="form-input" id="admin-order-filter" onchange="Admin.filterOrders(this.value)" style="width:auto">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Preparing">Preparing</option>
+            <option value="Ready">Ready</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="Admin.loadOrders()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="orders-admin-table">
+            <thead>
+              <tr>
+                <th>Order ID</th><th>Student</th><th>Items</th>
+                <th>Total</th><th>Pickup</th><th>Status</th><th>Change Status</th>
+              </tr>
+            </thead>
+            <tbody id="orders-admin-tbody">
+              <tr><td colspan="7" class="loading-center"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ─── Cart Sidebar ──────────────────────────────────────── -->
+<div class="cart-overlay" id="cart-overlay" onclick="CartUI.close()"></div>
+<div id="cart-sidebar">
+  <div class="cart-header">
+    <span class="cart-title"><i class="fas fa-shopping-cart"></i> Your Cart</span>
+    <button class="cart-close" onclick="CartUI.close()">✕</button>
+  </div>
+  <div class="cart-items-list" id="cart-items-list">
+    <div class="empty-state">
+      <div class="empty-icon">🛒</div>
+      <h3>Cart is empty</h3>
+      <p>Add items from the menu to get started</p>
+    </div>
+  </div>
+  <div class="cart-footer" id="cart-footer" style="display:none">
+    <div class="pickup-section">
+      <label>Preferred Pickup Time</label>
+      <input type="datetime-local" id="pickup-time" />
+    </div>
+    <div class="cart-total-row">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-value" id="cart-total">0</span>
+    </div>
+    <button class="checkout-btn" id="checkout-btn" onclick="CartUI.checkout()">
+      <i class="fas fa-bolt"></i> Place Order
+    </button>
+  </div>
+</div>
+
+<!-- ─── Product Modal ─────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="product-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="product-modal-title">Add Product</span>
+      <button class="modal-close" onclick="Admin.closeProductModal()">✕</button>
+    </div>
+    <form class="modal-form" id="product-form" onsubmit="Admin.saveProduct(event)">
+      <div class="form-group">
+        <label class="form-label">Product Name *</label>
+        <input type="text" class="form-input" id="p-name" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="p-desc"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Price (₹) *</label>
+          <input type="number" class="form-input" id="p-price" min="1" step="0.01" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category *</label>
+          <select class="form-input" id="p-category" required>
+            <option value="">Select...</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Drinks">Drinks</option>
+            <option value="Combos">Combos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Condition *</label>
+          <select class="form-input" id="p-condition" required>
+            <option value="Freshly Prepared">✨ Freshly Prepared</option>
+            <option value="Made to Order">👨‍🍳 Made to Order</option>
+            <option value="Pre-Packed">📦 Pre-Packed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Image URL</label>
+        <input type="url" class="form-input" id="p-image" placeholder="https://..." />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Stock</label>
+          <input type="number" class="form-input" id="p-stock" min="0" value="100" />
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label class="form-label">Available</label>
+          <div class="toggle-wrap" style="margin-top:8px">
+            <label class="toggle">
+              <input type="checkbox" id="p-available" checked />
+              <span class="toggle-slider"></span>
+            </label>
+            <span id="p-available-label" style="font-size:0.85rem;color:var(--success)">Available</span>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="p-id" />
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="Admin.closeProductModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="save-product-btn">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ─── Toast Container ────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ─── Scripts ───────────────────────────────────────────── -->
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/menu.js"></script>
+<script src="/js/cart.js"></script>
+<script src="/js/orders.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/app.js"></script>
+
+</body>
+</html>
